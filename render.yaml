@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: soulup-api-python
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python init_db.py && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    healthCheckPath: /pronto
+    envVars:
+      - key: PYTHON_VERSION
+        value: '3.14.8'
+      - key: ORACLE_HOST
+        value: oracle.fiap.com.br
+      - key: ORACLE_PORT
+        value: '1521'
+      - key: ORACLE_SID
+        value: ORCL
+      - key: ORACLE_USER
+        sync: false
+      - key: ORACLE_PASSWORD
+        sync: false
+      - key: SOULUP_SENHA_FUNCIONARIOS
+        sync: false
+      - key: SOULUP_ORIGENS
+        sync: false
+      - key: SOULUP_API_URL
+        value: https://challeng-sprin4-java.onrender.com
