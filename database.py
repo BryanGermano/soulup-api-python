@@ -7,6 +7,7 @@ from sqlalchemy import (create_engine, MetaData, Table, Column, Integer, String,
 metadata = MetaData()
 
 def pk(name):
+    """Define uma chave primária com sequência própria para o Oracle."""
     return Column('id', Integer, Sequence('su_py_' + name + '_seq'), primary_key=True)
 
 contas = Table('su_py_contas', metadata,
@@ -47,6 +48,7 @@ tentativas = Table('su_py_tentativas', metadata,
     Column('quantidade', Integer, nullable=False), Column('expira', DateTime, nullable=False))
 
 def engine_oracle():
+    """Configura o pool Oracle a partir do ambiente, sem conectar na importação."""
     # SID é passado explicitamente: ORCL na imagem do usuário não é service_name.
     def conectar():
         required = ['ORACLE_HOST', 'ORACLE_USER', 'ORACLE_PASSWORD', 'ORACLE_SID']
@@ -64,6 +66,7 @@ def engine_oracle():
                          hide_parameters=True)
 
 def inicializar(engine):
+    """Cria tabelas ausentes e o controle de gravações sem apagar registros."""
     metadata.create_all(engine)
     from sqlalchemy import select
     from sqlalchemy.exc import IntegrityError
@@ -75,6 +78,7 @@ def inicializar(engine):
         pass  # Outra inicialização concorrente inseriu a linha de coordenação.
 
 def bloquear(c):
+    """Bloqueia a linha de controle até o fim da transação de gravação."""
     # Compartilhado entre instâncias; serializa decisões e votos, não apenas threads.
     row = c.execute(controle.select().where(controle.c.chave == 'gravacoes').with_for_update()).first()
     if not row:

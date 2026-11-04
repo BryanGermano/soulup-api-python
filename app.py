@@ -18,6 +18,7 @@ from database import (engine_oracle, bloquear, contas, desafios, acoes, votos,
                       grupos, membros, sessoes, tentativas)
 
 def agora():
+    """Retorna UTC sem fuso para persistência nas colunas DATE/TIMESTAMP."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 class Erro(Exception):
@@ -25,6 +26,7 @@ class Erro(Exception):
         self.mensagem, self.status = mensagem, status
 
 def senha_hash(senha):
+    """Valida a senha recebida e retorna PBKDF2 com sal aleatório por conta."""
     if not isinstance(senha, str) or not 8 <= len(senha) <= 256:
         raise Erro('A senha deve ter entre 8 e 256 caracteres.')
     sal = secrets.token_hex(16)
@@ -32,6 +34,7 @@ def senha_hash(senha):
     return f'600000${sal}${digest}'
 
 def senha_confere(senha, registro):
+    """Compara uma senha com o hash armazenado sem comparação direta de texto."""
     try:
         rounds, salt, expected = registro.split('$')
         result = hashlib.pbkdf2_hmac('sha256', senha.encode(), bytes.fromhex(salt), int(rounds)).hex()
@@ -40,6 +43,7 @@ def senha_confere(senha, registro):
         return False
 
 def corpo():
+    """Retorna o objeto JSON recebido ou interrompe a requisição inválida."""
     if not request.is_json:
         raise Erro('Envie Content-Type: application/json.', 415)
     data = request.get_json()
@@ -48,6 +52,7 @@ def corpo():
     return data
 
 def texto(data, key, minimum=1, maximum=2000, trim=True):
+    """Extrai e valida um campo textual, preservando espaços de senhas."""
     value = data.get(key)
     if not isinstance(value, str):
         raise Erro(f'Informe {key}.')
@@ -58,17 +63,20 @@ def texto(data, key, minimum=1, maximum=2000, trim=True):
     return value
 
 def numero(data, key):
+    """Extrai um inteiro positivo; booleanos e números fracionários são recusados."""
     value = data.get(key)
     if type(value) is not int or value < 1:
         raise Erro(f'{key} deve ser inteiro positivo.')
     return value
 
 def booleano(data, key):
+    """Exige true/false JSON e retorna o booleano do campo informado."""
     if type(data.get(key)) is not bool:
         raise Erro(f'{key} deve ser true ou false.')
     return data[key]
 
 def java(method, path, data=None):
+    """Consome a API Java via HTTP, sem repetir gravações em caso de falha."""
     base = os.getenv('SOULUP_API_URL', 'https://challeng-sprin4-java.onrender.com').rstrip('/')
     req = Request(base + path, method=method,
         data=None if data is None else json.dumps(data).encode(),
@@ -81,20 +89,24 @@ def java(method, path, data=None):
         raise Erro('Java indisponível ou resposta não confirmada. Consulte os registros antes de repetir uma gravação.', 502)
 
 def listar_java(path):
+    """Consulta a API externa e exige uma lista de dicionários na resposta."""
     result = java('GET', path)
     if not isinstance(result, list) or any(not isinstance(x, dict) for x in result):
         raise Erro('Java retornou uma lista inválida.', 502)
     return result
 
 def create_app(engine=None, staff_password=None):
+    """Cria a API com Oracle; engine e senha opcionais permitem testes isolados."""
     app = Flask(__name__)
-    app.config.update(MAX_CONTENT_LENGTH=65536, JSON_SORT_KEYS=False)
+    app.config.update(MAX_CONTENT_LENGTH=65536)
+    app.json.sort_keys = False
     db = engine if engine is not None else engine_oracle()
     app.extensions['db'] = db
     staff = staff_password if staff_password is not None else os.getenv('SOULUP_SENHA_FUNCIONARIOS', '')
     staff_hash = senha_hash(staff) if len(staff) >= 8 else None
     dummy_hash = senha_hash(secrets.token_urlsafe(32))
-    origins = {x.strip().rstrip('/') for x in os.getenv('SOULUP_ORIGENS', 'http://localhost:5173').split(',') if x.strip()}
+    default_origins = 'http://localhost:5173,https://soul-up-plum.vercel.app'
+    origins = {x.strip().rstrip('/') for x in os.getenv('SOULUP_ORIGENS', default_origins).split(',') if x.strip()}
 
     @app.before_request
     def verificar_origem():
@@ -109,7 +121,7 @@ def create_app(engine=None, staff_password=None):
         origin = request.headers.get('Origin')
         if origin in origins:
             response.headers['Access-Control-Allow-Origin'] = origin
-            response.headers['Vary'] = 'Origin'
+            response.vary.add('Origin')
             response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS'
             response.headers['Access-Control-Expose-Headers'] = 'Content-Disposition'
@@ -138,6 +150,7 @@ def create_app(engine=None, staff_password=None):
         return jsonify(erro='Falha interna. Confira a configuração do serviço.'), 500
 
     def auth(role=None):
+        """Protege a rota com sessão persistida e, opcionalmente, perfil exigido."""
         def decorator(fn):
             @wraps(fn)
             def wrapper(*args, **kwargs):
@@ -381,6 +394,7 @@ def create_app(engine=None, staff_password=None):
         return '', 204
 
     def challenge_data(data):
+        """Valida descrição, categoria e pontos antes de inserir ou alterar."""
         points = numero(data, 'pontos')
         if points > 10000:
             raise Erro('O máximo é 10000 pontos.')
@@ -428,6 +442,7 @@ def create_app(engine=None, staff_password=None):
         return '', 204
 
     def action_list():
+        """Retorna ações com autor e descrição, serializando datas como UTC."""
         with db.connect() as c:
             rows = c.execute(select(acoes, contas.c.nome, desafios.c.descricao).join(contas,
                 contas.c.id == acoes.c.autor).join(desafios, desafios.c.id == acoes.c.desafio).order_by(acoes.c.id)).mappings()
@@ -487,6 +502,7 @@ def create_app(engine=None, staff_password=None):
         return jsonify(mensagem='Análise registrada.')
 
     def ranking_list():
+        """Soma pontos de ações aprovadas e bônus de validações, sem duplicar saldo."""
         with db.connect() as c:
             result = {r.id: {'id': r.id, 'nome': r.nome, 'pontos': 0} for r in c.execute(select(contas.c.id, contas.c.nome))}
             for r in c.execute(select(acoes.c.autor, acoes.c.pontos).where(acoes.c.status == 'aprovada')):
@@ -502,6 +518,7 @@ def create_app(engine=None, staff_password=None):
     @app.get('/exportacoes/<entity>')
     @auth('funcionario')
     def export(entity):
+        """Disponibiliza a consulta como download JSON, sem hashes ou tokens."""
         if entity == 'grupos':
             data = group_list()
         elif entity == 'acoes':
