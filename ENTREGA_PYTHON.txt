@@ -1,0 +1,102 @@
+SOUL UP - NEXUS ELITE
+COMPUTATIONAL THINKING USING PYTHON - ENTREGA 4
+Turma: 1TDSPY | FIAP | 2026
+
+PARTICIPANTES
+Raphael Ferreira Tavares - RM 569767
+Bryan Germano - RM 569716
+Enzo Macedo - RM 569427
+Victor Hugo Velasco Guzman - RM 573173
+Vinicios Alves - RM 573002
+
+VIDEO NO YOUTUBE
+PENDENTE: inserir aqui o link público ou não listado do vídeo de Python.
+Duração máxima: 5 minutos. Conferir acesso sem login antes de enviar.
+
+SUMARIO
+1. Tema e solução proposta
+2. Arquitetura e organização do código
+3. Demonstração dos requisitos
+4. Relação com o frontend
+5. Preparação e pendências
+
+1. TEMA E SOLUCAO PROPOSTA
+A Soul Up incentiva ações ambientais por meio de desafios, participação comunitária
+e reconhecimento. O programa Python permite gerenciar desafios de sustentabilidade
+persistidos no Oracle e consultar os dados do projeto e de uma API externa.
+
+2. ARQUITETURA E ORGANIZACAO
+menu.py: menus com repetição, leitura de opções, validação de entrada, dicionários
+para os campos dos desafios e chamadas HTTP. A senha de funcionário é lida sem
+exibição; o token fica somente em memória. O menu não conecta diretamente ao banco.
+
+app.py: API Flask com funções de validação, autenticação, permissões, regras de
+negócio e tratamento de erros. As mesmas rotas podem ser utilizadas pelo terminal
+e por clientes web. Nenhuma gravação HTTP é repetida automaticamente.
+
+database.py: tabelas SQLAlchemy, chaves estrangeiras, restrições, sequências Oracle
+e transações. Tabelas Python têm prefixo SU_PY_. init_db.py inicializa tabelas
+ausentes sem apagar registros existentes.
+
+Exportação: a API consulta os registros e retorna uma lista JSON. O menu grava
+essa lista em arquivo UTF-8, com data/hora no nome, por meio de um gerenciador de
+contexto que fecha o arquivo. Erros de rede, entrada, autorização e arquivo são
+apresentados ao operador. O encerramento usa finally para tentar revogar a sessão.
+
+3. DEMONSTRACAO DOS REQUISITOS
+Menus/submenus (10 pontos): executar menu.py e navegar no menu principal e no
+submenu CRUD de desafios, voltando com zero.
+
+CRUD e JSON (30 pontos): autenticar funcionário; inserir um desafio; consultar
+todos e por ID; alterar descrição, categoria, pontos e estado ativo; exportar e
+abrir o arquivo JSON; excluir com confirmação e consultar novamente.
+Usar um desafio de demonstração sem ações vinculadas. Para desafios com histórico,
+a API impede a exclusão; o operador deve desativá-los na alteração.
+
+API externa (20 pontos): demonstrar as consultas de desafios ou grupos Java no
+submenu de consultas, explicando a função java() em app.py e o tratamento de
+indisponibilidade. A URL é configurada por SOULUP_API_URL.
+
+Relevância ao projeto / relação com o frontend (10 pontos): demonstrar a relação
+dos desafios com sustentabilidade e explicar os contratos entre os serviços.
+O enunciado aceita informações relevantes ao projeto como alternativa ao reflexo
+bidirecional completo. Não apresentar telas de desafios Java como se fossem os
+registros do CRUD Python.
+
+Vídeo (30 pontos): incluir integrantes, sumário, tema, solução, explicação do
+código e execução dos casos acima, além da relação com o frontend.
+
+4. RELACAO COM O FRONTEND
+O frontend atual usa Python para cadastro e autenticação com token Bearer mediado
+por seu servidor Node. Seu catálogo/CRUD de desafios usa Java e as evidências e
+ranking demonstrativos ficam no navegador. O menu opera os desafios Python.
+Para compartilhar esse CRUD com as telas, aplicar os ajustes descritos em
+INTEGRACAO_FRONTEND.md. A criação deste menu não faz essa sincronização.
+
+5. ROTEIRO SUGERIDO DO VIDEO (ATE 5 MINUTOS)
+00:00-00:35: nomes dos integrantes, sumário e tema.
+00:35-01:10: arquitetura, tabelas Oracle, funções, listas/dicionários e validação.
+01:10-03:20: menu e CRUD completo, exportação e abertura do JSON.
+03:20-04:05: consumo da API externa e tratamento de erro.
+04:05-05:00: relação com o frontend, relevância da solução e execução dos testes.
+Mostrar banco real configurado e dados reais da demonstração, sem exibir senhas.
+
+PENDENCIAS ANTES DO ENVIO
+[ ] Validar inicialização, conexão e CRUD no Oracle real.
+[ ] Validar consumo da API Java publicada.
+[ ] Aplicar SOULUP_ORIGENS no Render com a origem real do site e conferir o CORS.
+[ ] Conferir cadastro/login/logout no frontend com a versão publicada do Python.
+[ ] Gravar o vídeo de até 5 minutos e substituir a pendência pelo link do YouTube.
+[ ] Conferir nomes, RMs e acesso ao vídeo.
+[ ] Executar python -m unittest discover -v.
+[ ] Regenerar o ZIP com python preparar_entrega.py e anexar o pacote final no portal.
+
+O pacote contém código e este documento. Sua integridade não comprova vídeo,
+disponibilidade remota ou conexão Oracle. Conferir README.md para instalação.
+
+CONFERENCIA TECNICA EM 04/11/2026
+Os 17 testes locais passaram. A prontidão do Python publicado respondeu HTTP 200
+com banco conectado; o consumo Java real retornou lista válida de desafios.
+O site respondeu 401 sem sessão, comportamento esperado. O Python recusou a origem
+pública do site com 403; a configuração SOULUP_ORIGENS precisa ser aplicada no Render.
+Essas leituras não certificam cadastro, edição e exclusão no Oracle em produção.
