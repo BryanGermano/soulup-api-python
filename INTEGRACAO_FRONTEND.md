@@ -31,10 +31,10 @@ Essa configuração é do backend e não exige trocar os formulários de login.
 o frontend precisa de ajustes.** A situação observada é:
 
 | Informação | Frontend atual | API Python |
-|---|---|---|
-| Cadastro/login de conta | Python por proxy e servidor Node | `/usuarios`, `/auth/*` |
-| Catálogo e gestão de desafios | Java em `/api/java/desafios` | `/desafios` e `/desafios/{id}` |
-| Evidências e análises demonstrativas | `localStorage` | `/acoes`, `/acoes/{id}/analise` |
+| --- | --- | --- |
+| Cadastro/login | Python por Node | `/usuarios`, `/auth/*` |
+| Catálogo/CRUD | Java: `/api/java/desafios` | `/desafios`, `/desafios/{id}` |
+| Evidências e análises | `localStorage` | `/acoes`, `/acoes/{id}/analise` |
 | Ranking demonstrativo | Calculado no navegador | `/ranking` |
 
 O programa de terminal opera as tabelas Python. Os desafios Java não são
@@ -58,8 +58,8 @@ automaticamente copiados para elas. Não reutilize IDs Java como IDs Python.
    correspondente, com rotas permitidas, verificação de origem nas escritas e
    encaminhamento do token pelo servidor. Não devolver o token ao JavaScript.
 4. **Exportação:** oferecer download autenticado de
-   `GET /exportacoes/desafios` pelo servidor do site, preservando o tipo JSON e o
-   cabeçalho `Content-Disposition`.
+   `GET /exportacoes/desafios` pelo servidor do site, preservando o tipo JSON
+   e o cabeçalho `Content-Disposition`.
 5. **Estado e erros:** atualizar a lista após confirmação; tratar 401 (sessão),
    403 (perfil), 404 (inexistente), 409 (vínculos/conflitos) e falhas de serviço.
    O Python retorna o texto no campo `erro`. Impedir a exclusão de desafios com
